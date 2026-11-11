@@ -189,7 +189,7 @@
             border-left: 3px solid var(--secondary);
         }
 
-        /* Modal & Timer Interactif */
+        /* Modal & Timer Interactif Réglable (1-15 min) */
         .modal {
             display: none;
             position: fixed;
@@ -209,63 +209,60 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
         }
 
-        /* Cercle Time Timer Visuel */
         .timer-circle-container {
             position: relative;
-            width: 150px;
-            height: 150px;
+            width: 140px;
+            height: 140px;
             margin: 0 auto;
         }
         .timer-svg {
             transform: rotate(-90deg);
-            width: 150px;
-            height: 150px;
+            width: 140px;
+            height: 140px;
         }
         .timer-path-elapsed {
             fill: none;
             stroke: #eee;
-            stroke-width: 12;
+            stroke-width: 10;
         }
         .timer-path-remaining {
             fill: none;
             stroke: var(--secondary);
-            stroke-width: 12;
+            stroke-width: 10;
             stroke-linecap: round;
-            transition: stroke-dasharray 1s linear;
+            transition: stroke-dasharray 0.2s linear;
         }
         .timer-label {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             color: var(--primary);
         }
 
-        .time-buttons {
+        /* Curseur de réglage style iPhone */
+        .slider-container {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             gap: 6px;
-            flex-wrap: wrap;
-        }
-        .time-btn {
             background: var(--bg-light);
-            border: 1px solid #ddd;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .slider-container label {
+            font-size: 13px;
             font-weight: bold;
             color: var(--primary);
         }
-        .time-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
+        .range-slider {
+            width: 100%;
+            accent-color: var(--secondary);
+            cursor: pointer;
         }
     </style>
 </head>
@@ -290,7 +287,7 @@
                 <div class="icon-circle bg-orange">⏱️</div>
                 <div class="card-content">
                     <h3>Time Timer Visuel</h3>
-                    <p>Gérer le temps de travail sans stress (1 à 15 min).</p>
+                    <p>Minuteur réglable sur mesure de 1 à 15 minutes.</p>
                 </div>
             </div>
         </div>
@@ -362,16 +359,15 @@
         </a>
     </div>
 
-    <!-- Modal Time Timer Interactif (1 à 15 min) -->
+    <!-- Modal Time Timer Réglable 1 à 15 min -->
     <div id="timerModal" class="modal">
         <div class="modal-content">
-            <h3 style="color: var(--primary);">⏱️ Time Timer Visuel</h3>
-            <p style="font-size: 13px; color: #666;">Choisis ton temps de concentration :</p>
+            <h3 style="color: var(--primary);">⏱️ Time Timer Réglable</h3>
             
-            <div class="time-buttons">
-                <button class="time-btn active" onclick="setTimerMinutes(5)">5 min</button>
-                <button class="time-btn" onclick="setTimerMinutes(10)">10 min</button>
-                <button class="time-btn" onclick="setTimerMinutes(15)">15 min</button>
+            <!-- Curseur de réglage -->
+            <div class="slider-container">
+                <label for="timeSlider">Durée : <span id="sliderValue">5</span> minutes</label>
+                <input type="range" id="timeSlider" class="range-slider" min="1" max="15" value="5" oninput="adjustTimerSlider(this.value)">
             </div>
 
             <div class="timer-circle-container">
@@ -387,12 +383,12 @@
                 <button class="btn" onclick="resetTimer()" style="background-color: #ccc; color: #333;">Reset</button>
             </div>
 
-            <button class="btn" onclick="closeModal()" style="background: transparent; color: #666; border: none; font-size: 13px; margin-top: -5px;">Fermer l'outil</button>
+            <button class="btn" onclick="closeModal()" style="background: transparent; color: #666; border: none; font-size: 13px; margin-top: -6px;">Fermer l'outil</button>
         </div>
     </div>
 
     <script>
-        // Logique du Rappel Actif et Carnet de Victoires
+        // Logique Rappel Actif et Victoires
         function saveRappel() {
             const input = document.getElementById('rappelInput');
             if(input.value.trim() !== "") {
@@ -413,8 +409,8 @@
             }
         }
 
-        // Logique du Time Timer Interactif (1 à 15 minutes)
-        let totalSeconds = 300; // 5 min par défaut
+        // Logique du Minuteur Réglable (1 à 15 minutes)
+        let totalSeconds = 300;
         let timeLeft = 300;
         let timerId = null;
         const circleLength = 264; // 2 * pi * 42
@@ -430,17 +426,12 @@
             document.getElementById('timerModal').style.display = 'none';
         }
 
-        function setTimerMinutes(mins) {
-            clearInterval(timerId);
-            timerId = null;
-            document.getElementById('startPauseBtn').innerText = "Démarrer";
+        function adjustTimerSlider(mins) {
+            if (timerId !== null) return; // Ne pas modifier pendant que ça tourne
             totalSeconds = mins * 60;
             timeLeft = totalSeconds;
+            document.getElementById('sliderValue').innerText = mins;
             updateDisplay();
-
-            // Mettre à jour les boutons actifs
-            document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
         }
 
         function updateDisplay() {
@@ -478,6 +469,8 @@
         function resetTimer() {
             clearInterval(timerId);
             timerId = null;
+            const currentMins = document.getElementById('timeSlider').value;
+            totalSeconds = currentMins * 60;
             timeLeft = totalSeconds;
             document.getElementById('startPauseBtn').innerText = "Démarrer";
             updateDisplay();
