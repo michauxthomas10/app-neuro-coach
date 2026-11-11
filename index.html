@@ -189,7 +189,7 @@
             border-left: 3px solid var(--secondary);
         }
 
-        /* Modal & Timer Interactif Réglable (1-15 min) */
+        /* Modal & Timer Interactif Géant */
         .modal {
             display: none;
             position: fixed;
@@ -204,7 +204,7 @@
             background: white;
             padding: 24px;
             border-radius: 16px;
-            max-width: 340px;
+            max-width: 360px;
             width: 100%;
             text-align: center;
             display: flex;
@@ -212,50 +212,53 @@
             gap: 14px;
         }
 
+        /* Conteneur du cercle et affichage géant central */
         .timer-circle-container {
             position: relative;
-            width: 140px;
-            height: 140px;
+            width: 200px;
+            height: 200px;
             margin: 0 auto;
         }
         .timer-svg {
             transform: rotate(-90deg);
-            width: 140px;
-            height: 140px;
+            width: 200px;
+            height: 200px;
         }
         .timer-path-elapsed {
             fill: none;
             stroke: #eee;
-            stroke-width: 10;
+            stroke-width: 12;
         }
         .timer-path-remaining {
             fill: none;
             stroke: var(--secondary);
-            stroke-width: 10;
+            stroke-width: 12;
             stroke-linecap: round;
             transition: stroke-dasharray 0.2s linear;
         }
+        /* Temps en très grands caractères au centre (prend la moitié de l'espace visuel de la modale) */
         .timer-label {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 38px;
+            font-weight: 900;
             color: var(--primary);
+            letter-spacing: -1px;
         }
 
-        /* Curseur de réglage style iPhone */
+        /* Curseur de réglage libre 1 à 15 min style iPhone */
         .slider-container {
             display: flex;
             flex-direction: column;
             gap: 6px;
             background: var(--bg-light);
-            padding: 10px;
+            padding: 12px;
             border-radius: 10px;
         }
         .slider-container label {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: bold;
             color: var(--primary);
         }
@@ -263,6 +266,7 @@
             width: 100%;
             accent-color: var(--secondary);
             cursor: pointer;
+            height: 6px;
         }
     </style>
 </head>
@@ -287,7 +291,7 @@
                 <div class="icon-circle bg-orange">⏱️</div>
                 <div class="card-content">
                     <h3>Time Timer Visuel</h3>
-                    <p>Minuteur réglable sur mesure de 1 à 15 minutes.</p>
+                    <p>Minuteur réglable sur mesure de 1 à 15 minutes avec alerte.</p>
                 </div>
             </div>
         </div>
@@ -359,17 +363,18 @@
         </a>
     </div>
 
-    <!-- Modal Time Timer Réglable 1 à 15 min -->
+    <!-- Modal Time Timer Réglable 1 à 15 min (Affichage Géant & Alerte Sonore) -->
     <div id="timerModal" class="modal">
         <div class="modal-content">
             <h3 style="color: var(--primary);">⏱️ Time Timer Réglable</h3>
             
-            <!-- Curseur de réglage -->
+            <!-- Curseur de réglage libre (1 à 15 min) -->
             <div class="slider-container">
-                <label for="timeSlider">Durée : <span id="sliderValue">5</span> minutes</label>
+                <label for="timeSlider">Choisir la durée : <span id="sliderValue" style="color:var(--secondary); font-size:16px;">5</span> minutes</label>
                 <input type="range" id="timeSlider" class="range-slider" min="1" max="15" value="5" oninput="adjustTimerSlider(this.value)">
             </div>
 
+            <!-- Cercle et Temps en très grands caractères au centre -->
             <div class="timer-circle-container">
                 <svg class="timer-svg" viewBox="0 0 100 100">
                     <circle class="timer-path-elapsed" cx="50" cy="50" r="42"></circle>
@@ -378,12 +383,12 @@
                 <div id="timerLabel" class="timer-label">05:00</div>
             </div>
 
-            <div style="display: flex; gap: 8px; justify-content: center;">
-                <button class="btn" id="startPauseBtn" onclick="toggleTimer()" style="background-color: var(--secondary); flex: 1;">Démarrer</button>
-                <button class="btn" onclick="resetTimer()" style="background-color: #ccc; color: #333;">Reset</button>
+            <div style="display: flex; gap: 8px; justify-content: center; margin-top: 4px;">
+                <button class="btn" id="startPauseBtn" onclick="toggleTimer()" style="background-color: var(--secondary); flex: 1; padding: 12px; font-size: 15px;">Démarrer</button>
+                <button class="btn" onclick="resetTimer()" style="background-color: #ccc; color: #333; padding: 12px;">Reset</button>
             </div>
 
-            <button class="btn" onclick="closeModal()" style="background: transparent; color: #666; border: none; font-size: 13px; margin-top: -6px;">Fermer l'outil</button>
+            <button class="btn" onclick="closeModal()" style="background: transparent; color: #666; border: none; font-size: 13px; margin-top: -4px;">Fermer l'outil</button>
         </div>
     </div>
 
@@ -409,6 +414,29 @@
             }
         }
 
+        // --- SYNTHÈSE VOCALE / ALERTE SONORE DOUCE (Web Audio API) ---
+        function playBeepSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // Note Ré (aiguë et douce)
+                
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+                
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.2);
+            } catch(e) {
+                console.log("Audio non pris en charge directement");
+            }
+        }
+
         // Logique du Minuteur Réglable (1 à 15 minutes)
         let totalSeconds = 300;
         let timeLeft = 300;
@@ -427,7 +455,7 @@
         }
 
         function adjustTimerSlider(mins) {
-            if (timerId !== null) return; // Ne pas modifier pendant que ça tourne
+            if (timerId !== null) return; // Sécurité : on ne change pas la durée en plein milieu du chrono
             totalSeconds = mins * 60;
             timeLeft = totalSeconds;
             document.getElementById('sliderValue').innerText = mins;
@@ -456,6 +484,7 @@
                         clearInterval(timerId);
                         timerId = null;
                         document.getElementById('startPauseBtn').innerText = "Démarrer";
+                        playBeepSound(); // Déclenchement de l'alerte sonore douce
                         alert("Temps écoulé ! Super travail 🌟");
                     }
                 }, 1000);
